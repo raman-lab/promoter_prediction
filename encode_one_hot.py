@@ -3,6 +3,9 @@ import argparse
 import itertools
 import numpy as np
 
+# TODO: add encoding functions for just single or just pairwise nucleotide features
+# possibly add structural feature encodings too
+
 
 def encode_one_hot(sequence_list, length=19):
     nucleotides = 'ACGT'
@@ -29,7 +32,7 @@ def encode_one_hot(sequence_list, length=19):
 
 
 def promoter_data_file_to_lists(promoter_data_file):
-    """assumes file is 3 columns: 1. sequence 2. repression values 3. inducition values"""
+    """assumes file is 3 columns: 1. sequence 2. repression values 3. induction values"""
     sequences = []
     repression = []
     induction = []
