@@ -6,6 +6,7 @@ import random
 import numpy
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Lasso,Ridge
+from sklearn.metrics import r2_score
 import pylab as pl
 import math
 import itertools
@@ -111,9 +112,9 @@ print X
 #Lasso prefers least number of non-zero coefficients. This reduces the number of variables required to explain the phenotype
 # linreg = Lasso(alpha=0.0001,precompute=True,max_iter=10000,
 #             positive=False, random_state=9999, selection='random')
-linreg = Lasso(alpha=1,precompute=True,max_iter=10000,
-            positive=False, random_state=9999, selection='random')
-# linreg = LinearRegression()
+# linreg = Lasso(alpha=1,precompute=True,max_iter=10000,
+#             positive=False, random_state=9999, selection='random')
+linreg = LinearRegression()
 
 #Ridge imposes a penalty on the magnitude of the coefficients. One can get high coeff with OLS
 #linreg = Ridge(fit_intercept=False,alpha=0.5)
@@ -187,6 +188,7 @@ plt.plot(Y_test,Y_hat,'.')
 mx = max(numpy.hstack([Y_test,Y_hat]))
 mn = min(numpy.hstack([Y_test,Y_hat]))
 print 'mx mn', mx, mn
+print r2_score(Y_test, Y_hat)
 plt.plot([mn,mx],[mn,mx],'k')
 plt.xlabel('Actual Y')
 plt.ylabel('Predicted Y')
