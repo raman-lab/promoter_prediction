@@ -9,8 +9,9 @@ def txt_to_fas(input_txt_files):
     for txt_file in input_txt_files:
         with open(txt_file, 'r') as f:
             for line in f:
+                seq = line.split()[0]
                 sys.stdout.write('>seq_{0}\n'.format(counter))
-                sys.stdout.write(line)
+                sys.stdout.write('{0}\n'.format(seq))
                 counter += 1
 
 
