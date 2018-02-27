@@ -42,7 +42,7 @@ def plot_predicted_actual(y_actual, y_predicted, name):
     plt.close()
 
 
-def main_linear_regression(cross_validation_files, lasso, ridge, least_squares, neural_network, alpha):
+def cross_validation_dict_and_combos_from_txt(cross_validation_files):
     k = len(cross_validation_files)
     cross_validation_dict = {
         key: {
@@ -58,6 +58,11 @@ def main_linear_regression(cross_validation_files, lasso, ridge, least_squares, 
         cross_validation_dict[c]['rep'] = rep_list
         cross_validation_dict[c]['ind'] = ind_list
     cross_validation_sets = itertools.combinations(range(k), k - 1)
+    return cross_validation_dict, cross_validation_sets
+
+
+def linear_regression_cv(cross_validation_files, lasso, ridge, least_squares, neural_network, alpha):
+    cross_validation_dict, cross_validation_combos = cross_validation_dict_and_combos_from_txt(cross_validation_files)
 
     if not alpha:
         x_train, rep_train, ind_train, fi_train = training_sets_from_cv_dict(range(k), cross_validation_dict)
@@ -87,7 +92,7 @@ def main_linear_regression(cross_validation_files, lasso, ridge, least_squares, 
         alpha_ind = alpha
         alpha_fi = alpha
 
-    for cv_set in cross_validation_sets:
+    for cv_set in cross_validation_combos:
         x_train, rep_train, ind_train, fi_train = training_sets_from_cv_dict(cv_set, cross_validation_dict)
         missing_set = list(set(range(k)) - set(cv_set))[0]
         x_validation = cross_validation_dict[missing_set]['X']
@@ -165,5 +170,5 @@ if __name__ == '__main__':
     required.add_argument('-cv', '--cross_validation_files', required=True, nargs='*',
                           help='cross validation data files')
     args = parser.parse_args()
-    main_linear_regression(args.cross_validation_files, args.lasso, args.ridge,
+    linear_regression_cv(args.cross_validation_files, args.lasso, args.ridge,
                            args.least_squares, args.neural_network, args.alpha)
