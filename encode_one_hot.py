@@ -7,7 +7,7 @@ import numpy as np
 # possibly add structural feature encodings too
 
 
-def encode_one_hot(sequence_list, length=19):
+def encode_one_hot(sequence_list, length=19, pairwise=True):
     nucleotides = 'ACGT'
     positions = range(0, length)
     single_position_items = list(itertools.product(positions, nucleotides))
@@ -22,11 +22,12 @@ def encode_one_hot(sequence_list, length=19):
                 x.append(1)
             else:
                 x.append(0)
-        for position_pair, nucleotide_pair in pairwise_items:
-            if seq[position_pair[0]] == nucleotide_pair[0] and seq[position_pair[1]] == nucleotide_pair[1]:
-                x.append(1)
-            else:
-                x.append(0)
+        if pairwise:
+            for position_pair, nucleotide_pair in pairwise_items:
+                if seq[position_pair[0]] == nucleotide_pair[0] and seq[position_pair[1]] == nucleotide_pair[1]:
+                    x.append(1)
+                else:
+                    x.append(0)
         feature_matrix.append(x)
     return feature_matrix
 
