@@ -42,7 +42,7 @@ def plot_predicted_actual(y_actual, y_predicted, name):
     plt.close()
 
 
-def cross_validation_dict_and_combos_from_txt(cross_validation_files):
+def cross_validation_dict_and_combos_from_txt(cross_validation_files, pairwise=True):
     k = len(cross_validation_files)
     cross_validation_dict = {
         key: {
@@ -54,7 +54,7 @@ def cross_validation_dict_and_combos_from_txt(cross_validation_files):
     for c, cv_file in enumerate(cross_validation_files):
         seq_list, rep_list, ind_list = promoter_data_file_to_lists(cv_file)
         cross_validation_dict[c]['seq'] = seq_list
-        cross_validation_dict[c]['X'] = encode_one_hot(seq_list)
+        cross_validation_dict[c]['X'] = encode_one_hot(seq_list, pairwise)
         cross_validation_dict[c]['rep'] = rep_list
         cross_validation_dict[c]['ind'] = ind_list
     cross_validation_sets = itertools.combinations(range(k), k - 1)
@@ -62,6 +62,7 @@ def cross_validation_dict_and_combos_from_txt(cross_validation_files):
 
 
 def linear_regression_cv(cross_validation_files, lasso, ridge, least_squares, neural_network, alpha):
+    k = len(cross_validation_files)
     cross_validation_dict, cross_validation_combos = cross_validation_dict_and_combos_from_txt(cross_validation_files)
 
     if not alpha:
