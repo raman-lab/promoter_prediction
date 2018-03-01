@@ -3,8 +3,7 @@ import argparse
 import itertools
 import numpy as np
 
-# TODO: add encoding functions for just single or just pairwise nucleotide features
-# possibly add structural feature encodings too
+# TODO: add encoding functions for dna shape parameters
 
 
 def encode_one_hot(sequence_list, length=19, pairwise=True):
@@ -16,7 +15,7 @@ def encode_one_hot(sequence_list, length=19, pairwise=True):
     pairwise_items = list(itertools.product(pairwise_positions, pairwise_nucleotides))
     feature_matrix = []
     for seq in sequence_list:
-        x = [1]
+        x = []
         for position, nucleotide in single_position_items:
             if seq[position] == nucleotide:
                 x.append(1)
