@@ -6,6 +6,9 @@ from linear_regression_cv import cross_validation_dict_and_combos_from_txt, trai
     plot_predicted_actual
 from sklearn.neural_network import MLPRegressor
 
+# TODO: add plotting for multiple output nodes, add options to test parameters, change plotting to fit scheme in
+# TODO: linear_regression script
+
 
 def perceptron_regression_cv(cross_validation_files, features):
     k = len(cross_validation_files)
@@ -30,13 +33,13 @@ def perceptron_regression_cv(cross_validation_files, features):
         ind_validation = np.log10(ind_validation)
 
         # data for model to predict both repression and induction values
-        rep_ind_train = np.asarray([rep_train, ind_train])
-        rep_ind_validation = np.asarray([rep_validation, ind_validation])
+        rep_ind_train = np.column_stack((rep_train, ind_train))
+        rep_ind_validation = np.column_stack((rep_validation, ind_validation))
 
-        model_rep = MLPRegressor().fit(x_train, rep_train)
-        model_ind = MLPRegressor().fit(x_train, ind_train)
-        model_fi = MLPRegressor().fit(x_train, fi_train)
-        model_rep_ind = MLPRegressor().fit(x_train, rep_ind_train)
+        model_rep = MLPRegressor(verbose=True).fit(x_train, rep_train)
+        model_ind = MLPRegressor(verbose=True).fit(x_train, ind_train)
+        model_fi = MLPRegressor(verbose=True).fit(x_train, fi_train)
+        model_rep_ind = MLPRegressor(verbose=True).fit(x_train, rep_ind_train)
 
         y_hat_rep = model_rep.predict(x_validation)
         y_hat_ind = model_ind.predict(x_validation)
@@ -48,8 +51,14 @@ def perceptron_regression_cv(cross_validation_files, features):
         r_squared_fi = model_fi.score(x_validation, fi_validation)
         r_squared_rep_ind = model_rep_ind.score(x_validation, rep_ind_validation)
 
-        sys.stdout.write('validation set {0}: rep: {1} ind: {2} both: {3} fi: {4}\n'.format(
-            missing_set, r_squared_rep, r_squared_ind, r_squared_rep_ind, r_squared_fi))
+        sys.stdout.write('validation set {0}:\n'.format(missing_set))
+        sys.stdout.write('r squared: rep: {0} ind: {1} both: {2} fi: {3}\n'.format(
+            r_squared_rep, r_squared_ind, r_squared_rep_ind, r_squared_fi))
+        # neural nets do not give coefs
+        # sys.stdout.write('non zero coefs: rep: {0} ind: {1} fi: {2}\n'.format(
+        #     np.nonzero(model_rep.coef_), np.nonzero(model_ind.coef_),
+        #     np.nonzero(model_rep_ind.coef_), np.nonzero(model_fi.coef_)
+        # ))
 
         base_name = cross_validation_files[0].split('/')[-1].split('_cv_')[0]
         plot_predicted_actual(
@@ -63,8 +72,6 @@ def perceptron_regression_cv(cross_validation_files, features):
         )
         # plotting function does not work with both rep and fi data - should edit to plot in 3d (or some other
         # format) if handed multi dim data
-
-
 
 
 if __name__ == '__main__':
