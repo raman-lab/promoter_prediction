@@ -6,6 +6,7 @@ from linear_regression_cv import cross_validation_dict_and_combos_from_txt, trai
     plot_predicted_actual
 from sklearn.neural_network import MLPRegressor
 
+# TODO: need to change modeling fitting etc into a loop
 
 def perceptron_regression_cv(cross_validation_files, features, nodes,
                              verbose, learning_rate, activation, tolerance):
@@ -37,7 +38,7 @@ def perceptron_regression_cv(cross_validation_files, features, nodes,
         # data for model to predict both repression and induction values
         rep_ind_train = np.column_stack((rep_train, ind_train))
         rep_ind_validation = np.column_stack((rep_validation, ind_validation))
-
+        sys.stdout.write('training for repression:\n')
         model_rep = MLPRegressor(
             hidden_layer_sizes=(nodes,),
             verbose=verbose,
@@ -45,6 +46,7 @@ def perceptron_regression_cv(cross_validation_files, features, nodes,
             activation=activation,
             tol=tolerance,
         ).fit(x_train, rep_train)
+        sys.stdout.write('training for induction:\n')
         model_ind = MLPRegressor(
             hidden_layer_sizes=(nodes,),
             verbose=verbose,
@@ -52,6 +54,7 @@ def perceptron_regression_cv(cross_validation_files, features, nodes,
             activation=activation,
             tol=tolerance,
         ).fit(x_train, ind_train)
+        sys.stdout.write('training for fold induction:\n')
         model_fi = MLPRegressor(
             hidden_layer_sizes=(nodes,),
             verbose=verbose,
@@ -59,6 +62,7 @@ def perceptron_regression_cv(cross_validation_files, features, nodes,
             activation=activation,
             tol=tolerance,
         ).fit(x_train, fi_train)
+        sys.stdout.write('training for both repression and induction:\n')
         model_rep_ind = MLPRegressor(
             hidden_layer_sizes=(nodes,),
             verbose=verbose,
