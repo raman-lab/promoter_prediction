@@ -11,7 +11,7 @@ from sklearn.tree import DecisionTreeRegressor
 from linear_regression_cv import cross_validation_dict_and_combos_from_txt, training_sets_from_cv_dict
 
 
-def hyperparameter_search(input_files, estimator, base_name):
+def hyperparameter_search(input_files, estimator, base_name, verbose):
     if not base_name:
         base_name = '{0}'.format(estimator)
     k = len(input_files)
@@ -62,7 +62,7 @@ def hyperparameter_search(input_files, estimator, base_name):
         raise Exception('an allowable estimator was not given as input')
 
     for variable in ['rep', 'ind', 'fi', 'both']:
-        grid_search = GridSearchCV(estimator=regressor, param_grid=param_grid, cv=10)
+        grid_search = GridSearchCV(estimator=regressor, param_grid=param_grid, cv=10, verbose=verbose)
         grid_search.fit(x_train, training_dict[variable])
         gs_dataframe = pd.DataFrame.from_dict(grid_search.cv_results_)
         gs_dataframe.to_csv('{0}.csv'.format(base_name))
@@ -75,6 +75,7 @@ if __name__ == '__main__':
     values for an estimator. currently the parameter values for each allowable estimator are hard coded.
      input is space separated txt file(s) with data, the estimator to be used, """)
     parser.add_argument('-n', '--name', help='name of output csv file')
+    parser.add_argument('-v', '--verbose', type=int, default=0, choices=[0, 1, 2, 3])
     required = parser.add_argument_group('required')
     required.add_argument('-i', '--input_files', nargs='*', required=True,
                           help='input file(s) containing data that will be used to tune hyperparameters')
@@ -82,4 +83,4 @@ if __name__ == '__main__':
                           choices=['ridge', 'lasso', 'perceptron', 'decision_tree'],
                           help='sklearn regression estimator')
     args = parser.parse_args()
-    hyperparameter_search(args.input_files, args.estimator, args.name)
+    hyperparameter_search(args.input_files, args.estimator, args.name, args.verbose)
