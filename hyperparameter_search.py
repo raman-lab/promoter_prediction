@@ -8,7 +8,7 @@ from sklearn.linear_model import Lasso, Ridge
 from sklearn.model_selection import GridSearchCV
 from sklearn.neural_network import MLPRegressor
 from sklearn.tree import DecisionTreeRegressor
-from linear_regression_cv import cross_validation_dict_and_combos_from_txt, training_sets_from_cv_dict
+from linear_regression_cv import cross_validation_dict_and_combos_from_txt, data_arrays_from_cv_dict
 
 
 def hyperparameter_search(input_files, estimator, base_name, verbose):
@@ -16,7 +16,7 @@ def hyperparameter_search(input_files, estimator, base_name, verbose):
         base_name = '{0}'.format(estimator)
     k = len(input_files)
     cross_validation_dict, cross_validation_combos = cross_validation_dict_and_combos_from_txt(input_files)
-    x_train, rep_train, ind_train, fi_train = training_sets_from_cv_dict(range(k), cross_validation_dict)
+    x_train, rep_train, ind_train, fi_train = data_arrays_from_cv_dict(range(k), cross_validation_dict)
     training_dict = {
         'rep': rep_train,
         'ind': ind_train,
@@ -49,7 +49,7 @@ def hyperparameter_search(input_files, estimator, base_name, verbose):
         regressor = Ridge()
         param_grid = {
             'alpha': np.logspace(-6, 4, 100),
-            'solver': ['auto', 'svd', 'choelsky', 'lsqr', 'sparse_cg', 'sag', 'saga'],
+            'solver': ['auto', 'svd', 'cholesky', 'lsqr', 'sparse_cg', 'sag', 'saga'],
             'tol': np.logspace(-2, -4, 10)
         }
     elif estimator == 'lasso':
