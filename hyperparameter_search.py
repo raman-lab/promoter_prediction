@@ -48,14 +48,14 @@ def hyperparameter_search(input_files, estimator, base_name, verbose):
     elif estimator == 'ridge':
         regressor = Ridge()
         param_grid = {
-            'alpha': np.logspace(-6, 4, 100),
+            'alpha': np.logspace(-6, 4, 50),
             'solver': ['auto', 'svd', 'cholesky', 'lsqr', 'sparse_cg', 'sag', 'saga'],
             'tol': np.logspace(-2, -4, 10)
         }
     elif estimator == 'lasso':
         regressor = Lasso()
         param_grid = {
-            'alpha': np.logspace(-4, 1, 100),
+            'alpha': np.logspace(-4, 1, 50),
             'tol': np.logspace(-2, -4, 10)
         }
     else:
