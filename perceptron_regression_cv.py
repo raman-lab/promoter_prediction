@@ -2,7 +2,7 @@
 import argparse
 import numpy as np
 import sys
-from linear_regression_cv import cross_validation_dict_and_combos_from_txt, training_sets_from_cv_dict, \
+from linear_regression_cv import cross_validation_dict_and_combos_from_txt, data_arrays_from_cv_dict, \
     plot_predicted_actual
 from sklearn.neural_network import MLPRegressor
 
@@ -25,127 +25,71 @@ def perceptron_regression_cv(cross_validation_files, features, nodes,
     prediction_dict = {'rep': [], 'ind': [], 'fi': [], 'both': {'rep': [], 'ind': []}}
 
     for cv_combo in cross_validation_combos:
-        x_train, rep_train, ind_train, fi_train = training_sets_from_cv_dict(cv_combo, cross_validation_dict)
+        x_train, rep_train, ind_train, fi_train = data_arrays_from_cv_dict(cv_combo, cross_validation_dict)
         missing_set = list(set(range(k)) - set(cv_combo))[0]
-        x_validation = cross_validation_dict[missing_set]['X']
-        rep_validation = cross_validation_dict[missing_set]['rep']
-        ind_validation = cross_validation_dict[missing_set]['ind']
-        x_validation = np.asarray(x_validation)
-        fi_validation = np.log10(np.asarray(ind_validation) / np.asarray(rep_validation))
-        rep_validation = np.log10(rep_validation)
-        ind_validation = np.log10(ind_validation)
+        x_valid, rep_valid, ind_valid, fi_valid = data_arrays_from_cv_dict(missing_set, cross_validation_dict)
 
-        # data for model to predict both repression and induction values
-        rep_ind_train = np.column_stack((rep_train, ind_train))
-        rep_ind_validation = np.column_stack((rep_validation, ind_validation))
-        sys.stdout.write('training for repression:\n')
-        model_rep = MLPRegressor(
-            hidden_layer_sizes=(nodes,),
-            verbose=verbose,
-            learning_rate_init=learning_rate,
-            activation=activation,
-            tol=tolerance,
-        ).fit(x_train, rep_train)
-        sys.stdout.write('training for induction:\n')
-        model_ind = MLPRegressor(
-            hidden_layer_sizes=(nodes,),
-            verbose=verbose,
-            learning_rate_init=learning_rate,
-            activation=activation,
-            tol=tolerance,
-        ).fit(x_train, ind_train)
-        sys.stdout.write('training for fold induction:\n')
-        model_fi = MLPRegressor(
-            hidden_layer_sizes=(nodes,),
-            verbose=verbose,
-            learning_rate_init=learning_rate,
-            activation=activation,
-            tol=tolerance,
-        ).fit(x_train, fi_train)
-        sys.stdout.write('training for both repression and induction:\n')
-        model_rep_ind = MLPRegressor(
-            hidden_layer_sizes=(nodes,),
-            verbose=verbose,
-            learning_rate_init=learning_rate,
-            activation=activation,
-            tol=tolerance,
-        ).fit(x_train, rep_ind_train)
+        training_dict = {
+            'rep': rep_train,
+            'ind': ind_train,
+            'fi': fi_train,
+            'both': np.column_stack((rep_train, ind_train))
+        }
 
-        y_hat_rep = model_rep.predict(x_validation)
-        y_hat_ind = model_ind.predict(x_validation)
-        y_hat_fi = model_fi.predict(x_validation)
-        y_hat_rep_ind = model_rep_ind.predict(x_validation)
-
-        r_squared_rep = model_rep.score(x_validation, rep_validation)
-        r_squared_ind = model_ind.score(x_validation, ind_validation)
-        r_squared_fi = model_fi.score(x_validation, fi_validation)
-        r_squared_rep_ind = model_rep_ind.score(x_validation, rep_ind_validation)
-
-        r_squared_dict['rep'].append(r_squared_rep)
-        r_squared_dict['ind'].append(r_squared_ind)
-        r_squared_dict['fi'].append(r_squared_fi)
-        r_squared_dict['both'].append(r_squared_rep_ind)
-
-        validation_dict['rep'].extend(rep_validation)
-        validation_dict['ind'].extend(ind_validation)
-        validation_dict['fi'].extend(fi_validation)
-        validation_dict['both']['rep'].extend(rep_ind_validation[:, 0])
-        validation_dict['both']['ind'].extend(rep_ind_validation[:, 1])
-
-        prediction_dict['rep'].extend(y_hat_rep)
-        prediction_dict['ind'].extend(y_hat_ind)
-        prediction_dict['fi'].extend(y_hat_fi)
-        prediction_dict['both']['rep'].extend(y_hat_rep_ind[:, 0])
-        prediction_dict['both']['ind'].extend(y_hat_rep_ind[:, 1])
-
+        valid_dict = {
+            'rep': rep_valid,
+            'ind': ind_valid,
+            'fi': fi_valid,
+            'both': np.column_stack((rep_valid, ind_valid))
+        }
         sys.stdout.write('validation set {0}:\n'.format(missing_set))
-        sys.stdout.write('r squared: rep: {0} ind: {1} fi: {2} both: {3} \n'.format(
-            r_squared_rep, r_squared_ind, r_squared_fi, r_squared_rep_ind, ))
 
-    sys.stdout.write(
-        'avg r squared: rep: {0} +/- {1}\tind: {2} +/- {3}\tfi: {4} +/- {5}\tboth: {6} +/- {7}\n'.format(
-            round(np.average(r_squared_dict['rep']), 2), round(np.std(r_squared_dict['rep']), 2),
-            round(np.average(r_squared_dict['ind']), 2), round(np.std(r_squared_dict['ind']), 2),
-            round(np.average(r_squared_dict['fi']), 2), round(np.std(r_squared_dict['fi']), 2),
-            round(np.average(r_squared_dict['both']), 2), round(np.std(r_squared_dict['both']), 2),
-        )
-    )
+        for variable in ['rep', 'ind', 'fi', 'both']:
+            sys.stdout.write('training {0}:\n'.format(variable))
+            regressor = MLPRegressor(
+                hidden_layer_sizes=(nodes,),
+                verbose=verbose,
+                learning_rate_init=learning_rate,
+                activation=activation,
+                tol=tolerance,
+            ).fit(x_train, training_dict[variable])
+            y_hat = regressor.predict(x_valid)
+            r_squared = regressor.score(x_valid, valid_dict[variable])
+            sys.stdout.write('r squared: {0}\n'.format(r_squared))
+            r_squared_dict[variable].append(r_squared)
+            if variable == 'both':
+                validation_dict[variable]['rep'].extend(valid_dict[variable][:, 0])
+                validation_dict[variable]['ind'].extend(valid_dict[variable][:, 1])
+                prediction_dict[variable]['rep'].extend(y_hat[:, 0])
+                prediction_dict[variable]['ind'].extend(y_hat[:, 1])
+            else:
+                validation_dict[variable].extend(validation_dict[variable])
+                prediction_dict[variable].extend(y_hat)
+
     base_name = cross_validation_files[0].split('/')[-1].split('_cv_')[0]
-    plot_predicted_actual(
-        validation_dict['rep'], prediction_dict['rep'],
-        name='{0}_{1}-fold_rep'.format(base_name, k),
-        plot_text='{0} \pm {1}'.format(
-            round(np.average(r_squared_dict['rep']), 2), round(np.std(r_squared_dict['rep']), 2)
-        ),
-    )
-    plot_predicted_actual(
-        validation_dict['ind'], prediction_dict['ind'],
-        name='{0}_{1}-fold_ind'.format(base_name, k),
-        plot_text='{0} \pm {1}'.format(
-            round(np.average(r_squared_dict['ind']), 2), round(np.std(r_squared_dict['ind']), 2)
-        ),
-    )
-    plot_predicted_actual(
-        validation_dict['fi'], prediction_dict['fi'],
-        name='{0}_{1}-fold_fi'.format(base_name, k),
-        plot_text='{0} \pm {1}'.format(
-            round(np.average(r_squared_dict['fi']), 2), round(np.std(r_squared_dict['fi']), 2)
-        ),
-    )
-    plot_predicted_actual(
-        validation_dict['both']['rep'], prediction_dict['both']['rep'],
-        name='{0}_{1}-fold_both_rep'.format(base_name, k),
-        plot_text='{0} \pm {1}'.format(
-            round(np.average(r_squared_dict['both']), 2), round(np.std(r_squared_dict['both']), 2)
-        )
-    )
-    plot_predicted_actual(
-        validation_dict['both']['ind'], prediction_dict['both']['ind'],
-        name='{0}_{1}-fold_both_ind'.format(base_name, k),
-        plot_text='{0} \pm {1}'.format(
-            round(np.average(r_squared_dict['both']), 2), round(np.std(r_squared_dict['both']), 2)
-        )
-    )
+    sys.stdout.write('avg r squared: ')
+    for variable in ['rep', 'ind', 'fi', 'both']:
+        r_squared_avg = round(np.average(r_squared_dict[variable]), 2)
+        r_squared_std = round(np.std(r_squared_dict[variable]), 2)
+        sys.stdout.write('{0}: {1} +/- {2}\t'.format(variable, r_squared_avg, r_squared_std))
+        if variable == 'both':
+            plot_predicted_actual(
+                validation_dict[variable]['rep'], prediction_dict[variable]['rep'],
+                name='{0}_{1}-fold_{2}_rep'.format(base_name, k, variable),
+                plot_text='{0} \pm {1}'.format(r_squared_avg, r_squared_std)
+            )
+            plot_predicted_actual(
+                validation_dict[variable]['ind'], prediction_dict[variable]['ind'],
+                name='{0}_{1}-fold_{2}_ind'.format(base_name, k, variable),
+                plot_text='{0} \pm {1}'.format(r_squared_avg, r_squared_std)
+            )
+        else:
+            plot_predicted_actual(
+                validation_dict[variable], prediction_dict[variable],
+                name='{0}_{1}-fold_{2}'.format(base_name, k, variable),
+                plot_text='{0} \pm {1}'.format(r_squared_avg, r_squared_std)
+            )
+    sys.stdout.write('\n')
 
 
 if __name__ == '__main__':

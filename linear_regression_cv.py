@@ -7,20 +7,20 @@ from encode_one_hot import promoter_data_file_to_lists, encode_one_hot
 from sklearn.linear_model import Lasso, Ridge, LassoCV, RidgeCV, LinearRegression
 
 
-def training_sets_from_cv_dict(key_list, cross_validation_dict):
-    x_train = []
-    rep_train = []
-    ind_train = []
+def data_arrays_from_cv_dict(key_list, cross_validation_dict):
+    x = []
+    rep = []
+    ind = []
     for key in key_list:
-        x_train.extend(cross_validation_dict[key]['X'])
-        rep_train.extend(cross_validation_dict[key]['rep'])
-        ind_train.extend(cross_validation_dict[key]['ind'])
+        x.extend(cross_validation_dict[key]['X'])
+        rep.extend(cross_validation_dict[key]['rep'])
+        ind.extend(cross_validation_dict[key]['ind'])
 
-    x_train = np.asarray(x_train)
-    fi_train = np.log10(np.asarray(ind_train) / np.asarray(rep_train))
-    rep_train = np.log10(rep_train)
-    ind_train = np.log10(ind_train)
-    return x_train, rep_train, ind_train, fi_train
+    x = np.asarray(x)
+    fi_train = np.log10(np.asarray(ind) / np.asarray(rep))
+    rep = np.log10(rep)
+    ind = np.log10(ind)
+    return x, rep, ind, fi_train
 
 
 def plot_predicted_actual(actual, predicted, name, plot_text):
@@ -59,33 +59,6 @@ def plot_predicted_actual(actual, predicted, name, plot_text):
     plt.savefig('{0}.png'.format(name), dpi=450)
     plt.close()
 
-    # for now i am not going to use plotly, may revisit
-    # elif library == 'plotly':
-    #     import plotly
-    #     import plotly.graph_objs as go
-    #
-    #     trace_scatter = go.Scatter(
-    #         x=actual,
-    #         y=predicted,
-    #         mode='markers',
-    #         marker=dict(color=almost_gray)
-    #     )
-    #     trace_line = go.Scatter(
-    #         x=[min_y, max_y],
-    #         y=[min_y, max_y],
-    #         mode='lines',
-    #         marker=dict(color=almost_black)
-    #     )
-    #
-    #     fig = {
-    #         'data': [trace_line, trace_scatter],
-    #         'layout': {
-    #             'xaxis': {'title': 'Actual'},
-    #             'yaxis': {'title': 'Predicted'},
-    #             'title': name}
-    #     }
-    #     plotly.offline.plot(fig, filename='{0}.html'.format(name), auto_open=False)
-
 
 def cross_validation_dict_and_combos_from_txt(cross_validation_files, pairwise=True):
     k = len(cross_validation_files)
@@ -110,119 +83,90 @@ def linear_regression_cv(cross_validation_files, model, alpha):
     k = len(cross_validation_files)
     cross_validation_dict, cross_validation_combos = cross_validation_dict_and_combos_from_txt(cross_validation_files)
 
-    if not alpha:
-        x_train, rep_train, ind_train, fi_train = training_sets_from_cv_dict(range(k), cross_validation_dict)
-        if model == 'lasso':
-            model_rep = LassoCV(cv=10).fit(x_train, rep_train)
-            model_ind = LassoCV(cv=10).fit(x_train, ind_train)
-            model_fi = LassoCV(cv=10).fit(x_train, fi_train)
-            alpha_rep = model_rep.alpha_
-            alpha_ind = model_ind.alpha_
-            alpha_fi = model_fi.alpha_
-        elif model == 'ridge':
-            model_rep = RidgeCV(alphas=np.logspace(-4, 3), cv=10).fit(x_train, rep_train)
-            model_ind = RidgeCV(alphas=np.logspace(-4, 3), cv=10).fit(x_train, ind_train)
-            model_fi = RidgeCV(alphas=np.logspace(-4, 3), cv=10).fit(x_train, fi_train)
-            alpha_rep = model_rep.alpha_
-            alpha_ind = model_ind.alpha_
-            alpha_fi = model_fi.alpha_
-        elif model == 'linreg':
-            alpha_rep = 0
-            alpha_ind = 0
-            alpha_fi = 0
-        else:
-            raise Exception('regression method not specified')
-        sys.stdout.write('alpha: rep: {0} ind: {1} fi: {2}\n'.format(alpha_rep, alpha_ind, alpha_fi))
-    else:
-        alpha_rep = alpha
-        alpha_ind = alpha
-        alpha_fi = alpha
-
-    r_squared_dict = {'rep': [], 'ind': [], 'fi': []}
-    validation_dict = {'rep': [], 'ind': [], 'fi': []}
-    prediction_dict = {'rep': [], 'ind': [], 'fi': []}
+    r_squared_dict = {'rep': [], 'ind': [], 'fi': [], 'both': []}
+    validation_dict = {'rep': [], 'ind': [], 'fi': [], 'both': {'rep': [], 'ind': []}}
+    prediction_dict = {'rep': [], 'ind': [], 'fi': [], 'both': {'rep': [], 'ind': []}}
 
     for cv_set in cross_validation_combos:
-        x_train, rep_train, ind_train, fi_train = training_sets_from_cv_dict(cv_set, cross_validation_dict)
+        x_train, rep_train, ind_train, fi_train = data_arrays_from_cv_dict(cv_set, cross_validation_dict)
         missing_set = list(set(range(k)) - set(cv_set))[0]
-        x_validation = cross_validation_dict[missing_set]['X']
-        rep_validation = cross_validation_dict[missing_set]['rep']
-        ind_validation = cross_validation_dict[missing_set]['ind']
-        x_validation = np.asarray(x_validation)
-        fi_validation = np.log10(np.asarray(ind_validation) / np.asarray(rep_validation))
-        rep_validation = np.log10(rep_validation)
-        ind_validation = np.log10(ind_validation)
+        x_valid, rep_valid, ind_valid, fi_valid = data_arrays_from_cv_dict(missing_set, cross_validation_dict)
 
-        if model == 'lasso':
-            model_rep = Lasso(alpha=alpha_rep).fit(x_train, rep_train)
-            model_ind = Lasso(alpha=alpha_ind).fit(x_train, ind_train)
-            model_fi = Lasso(alpha=alpha_fi).fit(x_train, fi_train)
-        elif model == 'ridge':
-            model_rep = Ridge(alpha=alpha_rep).fit(x_train, rep_train)
-            model_ind = Ridge(alpha=alpha_ind).fit(x_train, ind_train)
-            model_fi = Ridge(alpha=alpha_fi).fit(x_train, fi_train)
-        elif model == 'linreg':
-            model_rep = LinearRegression().fit(x_train, rep_train)
-            model_ind = LinearRegression().fit(x_train, ind_train)
-            model_fi = LinearRegression().fit(x_train, fi_train)
-        else:
-            raise Exception('regression method not specified')
+        training_dict = {
+            'rep': rep_train,
+            'ind': ind_train,
+            'fi': fi_train,
+            'both': np.column_stack((rep_train, ind_train))
+        }
 
-        y_hat_rep = model_rep.predict(x_validation)
-        y_hat_ind = model_ind.predict(x_validation)
-        y_hat_fi = model_fi.predict(x_validation)
-        r_squared_rep = model_rep.score(x_validation, rep_validation)
-        r_squared_ind = model_ind.score(x_validation, ind_validation)
-        r_squared_fi = model_fi.score(x_validation, fi_validation)
-        r_squared_dict['rep'].append(r_squared_rep)
-        r_squared_dict['ind'].append(r_squared_ind)
-        r_squared_dict['fi'].append(r_squared_fi)
-        validation_dict['rep'].extend(rep_validation)
-        validation_dict['ind'].extend(ind_validation)
-        validation_dict['fi'].extend(fi_validation)
-        prediction_dict['rep'].extend(y_hat_rep)
-        prediction_dict['ind'].extend(y_hat_ind)
-        prediction_dict['fi'].extend(y_hat_fi)
+        valid_dict = {
+            'rep': rep_valid,
+            'ind': ind_valid,
+            'fi': fi_valid,
+            'both': np.column_stack((rep_valid, ind_valid))
+        }
 
-        sys.stdout.write('validation set {0}:\n'.format(missing_set))
-        sys.stdout.write('r squared: rep: {0}\tind: {1}\tfi: {2}\n'.format(r_squared_rep, r_squared_ind, r_squared_fi))
-        sys.stdout.write('non zero coefs: rep: {0}\tind: {1}\tfi: {2}\n'.format(
-            np.count_nonzero(model_rep.coef_), np.count_nonzero(model_ind.coef_),
-            np.count_nonzero(model_fi.coef_)
-        ))
-    sys.stdout.write('avg r squared: rep: {0} +/- {1}\tind: {2} +/- {3}\tfi: {4} +/- {5}\n'.format(
-        round(np.average(r_squared_dict['rep']), 2), round(np.std(r_squared_dict['rep']), 2),
-        round(np.average(r_squared_dict['ind']), 2), round(np.std(r_squared_dict['ind']), 2),
-        round(np.average(r_squared_dict['fi']), 2), round(np.std(r_squared_dict['fi']), 2),
-    ))
+        sys.stdout.write('validation set {0}:\nr squared: '.format(missing_set))
+
+        for variable in ['rep', 'ind', 'fi', 'both']:
+            if model == 'lasso':
+                regressor = Lasso(alpha=alpha)
+            elif model == 'ridge':
+                regressor = Ridge(alpha=alpha)
+            elif model == 'linreg':
+                regressor = LinearRegression()
+            else:
+                raise Exception('regression method not specified')
+            regressor.fit(x_train, training_dict[variable])
+            y_hat = regressor.predict(x_valid)
+            r_squared = regressor.score(x_valid, valid_dict[variable])
+
+            r_squared_dict[variable].append(r_squared)
+            if variable == 'both':
+                validation_dict[variable]['rep'].extend(valid_dict[variable][:, 0])
+                validation_dict[variable]['ind'].extend(valid_dict[variable][:, 1])
+                prediction_dict[variable]['rep'].extend(y_hat[:, 0])
+                prediction_dict[variable]['ind'].extend(y_hat[:, 1])
+            else:
+                validation_dict[variable].extend(valid_dict[variable])
+                prediction_dict[variable].extend(y_hat)
+
+            sys.stdout.write('{0}: {1}\t'.format(variable, r_squared))
+        sys.stdout.write('\n')
+
     base_name = cross_validation_files[0].split('/')[-1].split('_cv_')[0]
-    plot_predicted_actual(
-        validation_dict['rep'], prediction_dict['rep'],
-        name='{0}_{1}_{2}-fold_rep'.format(base_name, model, k),
-        plot_text='{0} \pm {1}'.format(
-            round(np.average(r_squared_dict['rep']), 2), round(np.std(r_squared_dict['rep']), 2)),
-    )
-    plot_predicted_actual(
-        validation_dict['ind'], prediction_dict['ind'],
-        name='{0}_{1}_{2}-fold_ind'.format(base_name, model, k),
-        plot_text='{0} \pm {1}'.format(
-            round(np.average(r_squared_dict['ind']), 2), round(np.std(r_squared_dict['ind']), 2)),
-    )
-    plot_predicted_actual(
-        validation_dict['fi'], prediction_dict['fi'],
-        name='{0}_{1}_{2}-fold_fi'.format(base_name, model, k),
-        plot_text='{0} \pm {1}'.format(
-            round(np.average(r_squared_dict['fi']), 2), round(np.std(r_squared_dict['fi']), 2)),
-    )
+    sys.stdout.write('avg r squared: ')
+    for variable in ['rep', 'ind', 'fi', 'both']:
+        r_squared_avg = round(np.average(r_squared_dict[variable]), 2)
+        r_squared_std = round(np.std(r_squared_dict[variable]), 2)
+        sys.stdout.write('{0}: {1} +/- {2}\t'.format(variable, r_squared_avg, r_squared_std))
+        if variable == 'both':
+            plot_predicted_actual(
+                validation_dict[variable]['rep'], prediction_dict[variable]['rep'],
+                name='{0}_{1}_{2}-fold_{3}_rep'.format(base_name, model, k, variable),
+                plot_text='{0} \pm {1}'.format(r_squared_avg, r_squared_std)
+            )
+            plot_predicted_actual(
+                validation_dict[variable]['ind'], prediction_dict[variable]['ind'],
+                name='{0}_{1}_{2}-fold_{3}_ind'.format(base_name, model, k, variable),
+                plot_text='{0} \pm {1}'.format(r_squared_avg, r_squared_std)
+            )
+        else:
+            plot_predicted_actual(
+                validation_dict[variable], prediction_dict[variable],
+                name='{0}_{1}_{2}-fold_{3}'.format(base_name, model, k, variable),
+                plot_text='{0} \pm {1}'.format(r_squared_avg, r_squared_std)
+            )
+    sys.stdout.write('\n')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='runs linear regression using either Lasso or Ridge on input cross validation data sets. single '
                     'and pairwise nucleotides are used as features. regression models are made to predict repression '
-                    'and induction values, assumed to be columns 2 and 3, respectively. if alpha is not provided, '
-                    'it will be selected through error minimization with cross validation')
-    parser.add_argument('-a', '--alpha', type=float, help='alpha parameter used in regularization by Lasso and Ridge')
+                    'and induction values, assumed to be columns 2 and 3, respectively.')
+    parser.add_argument('-a', '--alpha', type=float, default=1.0,
+                        help='alpha parameter used in regularization by Lasso and Ridge')
     parser.add_argument('-m', '--model', choices=['linreg', 'lasso', 'ridge'], default='linreg',
                         help='type of linear regression model to use')
 
