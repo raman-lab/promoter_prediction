@@ -26,7 +26,7 @@ def perceptron_regression_cv(cross_validation_files, features, nodes,
 
     for cv_combo in cross_validation_combos:
         x_train, rep_train, ind_train, fi_train = data_arrays_from_cv_dict(cv_combo, cross_validation_dict)
-        missing_set = list(set(range(k)) - set(cv_combo))[0]
+        missing_set = list(set(range(k)) - set(cv_combo))
         x_valid, rep_valid, ind_valid, fi_valid = data_arrays_from_cv_dict(missing_set, cross_validation_dict)
 
         training_dict = {
@@ -47,7 +47,7 @@ def perceptron_regression_cv(cross_validation_files, features, nodes,
         for variable in ['rep', 'ind', 'fi', 'both']:
             sys.stdout.write('training {0}:\n'.format(variable))
             regressor = MLPRegressor(
-                hidden_layer_sizes=(nodes,),
+                hidden_layer_sizes=(100, 20),
                 verbose=verbose,
                 learning_rate_init=learning_rate,
                 activation=activation,
@@ -63,7 +63,7 @@ def perceptron_regression_cv(cross_validation_files, features, nodes,
                 prediction_dict[variable]['rep'].extend(y_hat[:, 0])
                 prediction_dict[variable]['ind'].extend(y_hat[:, 1])
             else:
-                validation_dict[variable].extend(validation_dict[variable])
+                validation_dict[variable].extend(valid_dict[variable])
                 prediction_dict[variable].extend(y_hat)
 
     base_name = cross_validation_files[0].split('/')[-1].split('_cv_')[0]

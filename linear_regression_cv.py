@@ -89,7 +89,7 @@ def linear_regression_cv(cross_validation_files, model, alpha):
 
     for cv_set in cross_validation_combos:
         x_train, rep_train, ind_train, fi_train = data_arrays_from_cv_dict(cv_set, cross_validation_dict)
-        missing_set = list(set(range(k)) - set(cv_set))[0]
+        missing_set = list(set(range(k)) - set(cv_set))
         x_valid, rep_valid, ind_valid, fi_valid = data_arrays_from_cv_dict(missing_set, cross_validation_dict)
 
         training_dict = {
